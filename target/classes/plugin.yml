@@ -1,0 +1,11 @@
+name: MonkeyJail
+version: '1.0-SNAPSHOT'
+main: me.dedushka.monkeyJail.MonkeyJail
+api-version: '1.21'
+softdepend:
+  - SkinsRestorer
+
+commands:
+  monkey:
+    description: Основная команда зоопарка
+    usage: /<command>
