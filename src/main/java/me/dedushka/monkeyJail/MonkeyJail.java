@@ -1,5 +1,6 @@
 package me.dedushka.monkeyJail;
 
+import me.dedushka.monkeyJail.Listeners.EventListener;
 import net.skinsrestorer.api.SkinsRestorer;
 import net.skinsrestorer.api.SkinsRestorerProvider;
 import org.bukkit.Bukkit;
@@ -16,7 +17,7 @@ public final class MonkeyJail extends JavaPlugin {
     private DataBaseManager DBM = new DataBaseManager(this);
     private OneChunkWorldManager worldManager;
     private static MonkeyJail instance;
-    private SkinsRestorer skinsRestorerAPI;
+    public static SkinsRestorer skinsRestorerAPI;
 
     @Override
     public void onEnable() {
@@ -24,6 +25,7 @@ public final class MonkeyJail extends JavaPlugin {
         saveDefaultConfig();
         checkDataBase();
         new JailLogic(this);
+        getServer().getPluginManager().registerEvents(new EventListener(), this);
 
         Plugin skinsRest = Bukkit.getPluginManager().getPlugin("SkinsRestorer");
         if(skinsRest!=null){

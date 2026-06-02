@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.bukkit.Bukkit.getLogger;
@@ -58,24 +59,13 @@ public class JailCommandsTabCompleter implements TabCompleter {
         }
         //тут /monkey jail <ник>
         else if (args.length == 2 && args[0].equals("jail")) {
-
-            String partial = args[1];
             for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getName().startsWith(partial)) {
-                    completions.add(player.getName());
-                }
+                completions.add(player.getName());
             }
         }
         //тут /monkey unjail <ник>. Сделал отдельно, т.к. надо,чтобы отображались только заключённые, а не все игроки
         else if (args.length == 2 && args[0].equals("unjail")) {
-            ArrayList<MonkeyClass> monkeys = DBM.getAllMonkeys(-1,-1);
-
-            String partial = args[1];
-            for (MonkeyClass monkey : monkeys) {
-                if (monkey.username.startsWith(partial)) {
-                    completions.add(monkey.username);
-                }
-            }
+            completions.addAll(JailLogic.monkeyList.keySet());
         }
         //тут будет /monkey create ... и /monkey editJail <название_тюрьмы> ...
         else if ((args.length == 2 && args[0].equalsIgnoreCase("createJail")) ||

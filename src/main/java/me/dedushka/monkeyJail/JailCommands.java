@@ -2,12 +2,14 @@ package me.dedushka.monkeyJail;
 
 import me.dedushka.monkeyJail.Classes.BlockPosClass;
 import me.dedushka.monkeyJail.Classes.JailClass;
+import me.dedushka.monkeyJail.Listeners.EventListener;
+import me.dedushka.monkeyJail.Listeners.ShreakingListener;
 import net.skinsrestorer.api.SkinsRestorer;
-import net.skinsrestorer.api.SkinsRestorerProvider;
 import net.skinsrestorer.api.connections.MineSkinAPI;
 import net.skinsrestorer.api.connections.model.MineSkinResponse;
 import net.skinsrestorer.api.property.SkinProperty;
 import net.skinsrestorer.api.property.SkinVariant;
+import net.skinsrestorer.api.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -25,14 +27,9 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.profile.PlayerProfile;
-import org.bukkit.profile.PlayerTextures;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import javax.xml.crypto.Data;
 import java.io.File;
-import java.net.URL;
 import java.util.*;
 
 import static org.bukkit.Bukkit.getLogger;
@@ -50,7 +47,7 @@ public class JailCommands implements CommandExecutor{
     static Set<BlockPosClass> blocks = null;
     static BlockPosClass spawnBlock = null;
     static DataBaseManager DBM = new DataBaseManager();
-    private SkinsRestorer skinsRestorerAPI;
+    //private static SkinsRestorer skinsRestorerAPI;
 
     static boolean isShowBorder = true;
     static boolean isShowing = false;
@@ -61,7 +58,7 @@ public class JailCommands implements CommandExecutor{
 
     public JailCommands(MonkeyJail MJ, SkinsRestorer skinsRestorerAPI){
         this.MJ = MJ;
-        this.skinsRestorerAPI = skinsRestorerAPI;
+        //this.skinsRestorerAPI = skinsRestorerAPI;
 //        Bukkit.getScheduler().runTaskTimer(MJ, () -> {
 //
 //            //JailCommands jC = new JailCommands();
@@ -161,9 +158,10 @@ public class JailCommands implements CommandExecutor{
         JailLogic.monkeys_shreaking.add(monkey_name);
         Location teleportLocation = new Location(myWorld, 8.5, 64, 8.5, -90, 0);
         PluginManager pM = MJ.getServer().getPluginManager();
-        final EventListener[] eventListener = {new EventListener()};
-        eventListener[0].monkey_names.add(player_monkey.getName());
-        pM.registerEvents(eventListener[0], MJ);
+        //final EventListener[] eventListener = {new EventListener()};
+        ShreakingListener shreakingListener = new ShreakingListener();
+        ShreakingListener.monkey_names.add(player_monkey.getName());
+        pM.registerEvents(shreakingListener, MJ);
 
         Location playerLocation = player.getLocation();
         Location monkeyLocation = player_monkey.getLocation();
@@ -215,8 +213,9 @@ public class JailCommands implements CommandExecutor{
                     player.sendMessage("§aВремя вышло!");
                     player.teleport(playerLocation);
                     player_monkey.teleport(monkeyLocation);
-                    HandlerList.unregisterAll(eventListener[0]);
-                    eventListener[0] =null;
+                    HandlerList.unregisterAll(shreakingListener);
+                    //HandlerList.unregisterAll(eventListener[0]);
+                   // eventListener[0] =null;
 
                     // Выгружаем мир (true - сохранить перед выгрузкой)
 
@@ -284,10 +283,33 @@ public class JailCommands implements CommandExecutor{
             getLogger().warning("Не удалось запарсить время");
             return false;
         }
+        getLogger().info("jailCommand 1");
+        if(MonkeyJail.skinsRestorerAPI==null){return false;}
+        getLogger().info("jailCommand 2");
 
-        if(skinsRestorerAPI!=null) {
-            setSkinFromUrl(Bukkit.getPlayer(args[1]), "http://textures.minecraft.net/texture/af20e8affb49949274a61ad7cf3da9f83026abad7e184d184109ff86785bb6f5");
+        try {
+
+            Player player_monkey = Bukkit.getPlayer(args[1]);
+            if(player_monkey==null){return false;}
+            getLogger().info("jailCommand 3");
+            PlayerStorage playerStorage = MonkeyJail.skinsRestorerAPI.getPlayerStorage();
+            Optional<SkinProperty> property = playerStorage.getSkinForPlayer(
+                    player_monkey.getUniqueId(),
+                    player_monkey.getName()
+            );
+            SkinProperty sP = property.orElse(null);
+            getLogger().info("Property = " + (sP==null ? "null" : "true"));
+
+            JailLogic.skinsHistory.put(player.getName(),sP);
+            getLogger().info("Размер skinsHistory в jailCommands: " + JailLogic.skinsHistory.size());
+
+            JailCommands.setSkinFromUrl(Bukkit.getPlayer(player.getName()), "http://textures.minecraft.net/texture/af20e8affb49949274a61ad7cf3da9f83026abad7e184d184109ff86785bb6f5");
         }
+        catch(Exception e ){
+            getLogger().warning("Не удалось получить скин игрока");
+        }
+
+
         DBM.addMonkey(args[2],args[1],time_left, player.getName(),String.join(" ", Arrays.copyOfRange(args, 4, args.length)));
         new JailLogic().updateMonkeyList();
         Bukkit.broadcastMessage("§c"+player.getName()+" посадил обезьяну " + args[1] + " в зоопарк \""+ args[2]+"\" на "+(time_left/20)+" секунд по причине: " + String.join(" ", Arrays.copyOfRange(args, 4, args.length)));
@@ -317,9 +339,10 @@ public class JailCommands implements CommandExecutor{
         getLogger().info("Прошёл в разобезьянник 3");
         if(DBM.isMonkeyInJail(args[1])){
             getLogger().info("Прошёл в разобезьянник 4");
-            DBM.removeMonkey(args[1]);
+            //DBM.removeMonkey(args[1]);
             Bukkit.broadcastMessage("§c"+player.getName()+" выпустил обезьяну " + args[1] + " из зоопарка"+((args.length==4 && args[3]!=null) ? (" по причине: " +String.join(" ", Arrays.copyOfRange(args, 3, args.length))) : "." )+".");
-            Bukkit.getPlayer(args[1]).teleport(Bukkit.getWorld("world").getSpawnLocation());
+            //Bukkit.getPlayer(args[1]).teleport(Bukkit.getWorld("world").getSpawnLocation());
+            JailLogic.removeFromMonkeys(args[1]);
 
         }
 
@@ -821,17 +844,16 @@ public class JailCommands implements CommandExecutor{
 
     }
 
-    public void setSkinFromUrl(Player player, String url) {
+    public static void setSkinFromUrl(Player player, String url) {
         getLogger().info("Начал устанавливать скин");
 
-        skinsRestorerAPI = SkinsRestorerProvider.get();
-        MineSkinAPI mineSkinAPI = skinsRestorerAPI.getMineSkinAPI();
+        MineSkinAPI mineSkinAPI = MonkeyJail.skinsRestorerAPI.getMineSkinAPI();
         // Generate skin from URL (use CLASSIC or SLIM)
         try {
             MineSkinResponse response = mineSkinAPI.genSkin(url, SkinVariant.CLASSIC);
             SkinProperty skinProperty = response.getProperty();
             // Apply directly to player
-            skinsRestorerAPI.getSkinApplier(Player.class).applySkin(player, skinProperty);
+            MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class).applySkin(player, skinProperty);
         }
         catch(Exception e){
             getLogger().info("Не удалось установить скин");

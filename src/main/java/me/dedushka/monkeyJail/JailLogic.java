@@ -3,6 +3,11 @@ package me.dedushka.monkeyJail;
 import me.dedushka.monkeyJail.Classes.BlockPosClass;
 import me.dedushka.monkeyJail.Classes.JailClass;
 import me.dedushka.monkeyJail.Classes.MonkeyClass;
+import net.skinsrestorer.api.connections.MineSkinAPI;
+import net.skinsrestorer.api.connections.model.MineSkinResponse;
+import net.skinsrestorer.api.property.SkinProperty;
+import net.skinsrestorer.api.property.SkinVariant;
+import net.skinsrestorer.api.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -14,14 +19,17 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Optional;
 
 import static org.bukkit.Bukkit.getLogger;
 
 public class JailLogic {
     private static DataBaseManager DBM = new DataBaseManager();
-    private static ArrayList<MonkeyClass>monkeyList = DBM.getAllMonkeys(-1,-1);
+    public static HashMap<String,MonkeyClass>monkeyList = DBM.getAllMonkeys(-1,-1);
     private static HashMap<String,MonkeyClass>updatedTimeMonkeys = new HashMap<>();
     public static HashMap<String, JailClass> jails= DBM.loadAllJails();
+
+    public static HashMap<String,SkinProperty>skinsHistory = new HashMap<>();
 
     public static ArrayList<String> monkeys_shreaking = new ArrayList<>();
 
@@ -58,27 +66,21 @@ public class JailLogic {
     public void doEveryLoop(){
         ticks+=10;
         //ArrayList<Player>onlinePlayers = Bukkit.getOnlinePlayers();
-        Iterator<MonkeyClass> it = monkeyList.iterator();
-        getLogger().info("Количество обезьян: "+monkeyList.size());
+        Iterator<MonkeyClass> it = monkeyList.values().iterator();
+        //getLogger().info("Количество обезьян: "+monkeyList.size());
         while (it.hasNext()) {
-            getLogger().info("Прошёл в обезьянник 1");
+            //getLogger().info("Прошёл в обезьянник 1");
             MonkeyClass monkey = it.next();
             if(!monkeys_shreaking.contains(monkey.username)) {
                 Player player = Bukkit.getPlayer(monkey.username);
-                getLogger().info("Прошёл в обезьянник 2");
+                //getLogger().info("Прошёл в обезьянник 2");
                 if (player != null && player.isOnline()) {
-                    getLogger().info("Прошёл в обезьянник 3");
+                    //getLogger().info("Прошёл в обезьянник 3");
                     if (monkey.time_left <= 0) {
-                        getLogger().info("Прошёл в обезьянник 4");
-                        DBM.removeMonkey(monkey.username);
-                        Bukkit.getPlayer(monkey.username).teleport(Bukkit.getWorld("world").getSpawnLocation());
-
-                        it.remove();
-
-                        continue;
-
+                        //getLogger().info("Прошёл в обезьянник 4");
+                        removeFromMonkeys(monkey.username);
                     } else {
-                        getLogger().info("Прошёл в обезьянник 5");
+                        //getLogger().info("Прошёл в обезьянник 5");
                         monkey.time_left -= 10;
                         updatedTimeMonkeys.put(monkey.username, monkey);
                         isTimeLeftUpdated = true;
@@ -88,9 +90,9 @@ public class JailLogic {
                         int z = (int) Math.floor(pL.getZ());
                         BlockPosClass playerPos = new BlockPosClass(x, y, z);
                         JailClass jail = jails.get(monkey.jail_name);
-                        getLogger().info("Название тюрьмы обезьяны: "+monkey.jail_name + ". Найдена: "+(jail==null ? "false" : "true"));
+                        //getLogger().info("Название тюрьмы обезьяны: "+monkey.jail_name + ". Найдена: "+(jail==null ? "false" : "true"));
                         if (jail != null) {
-                            getLogger().info("Прошёл в обезьянник 6");
+                            //getLogger().info("Прошёл в обезьянник 6");
                             if (!jail.blocks.contains(playerPos)) {
                                 //getLogger().info("Прошёл в обезьянник 7");
                                 player.teleport(new Location(
@@ -111,7 +113,23 @@ public class JailLogic {
             isTimeLeftUpdated=false;
             DBM.updateMonkeyTable(updatedTimeMonkeys);
         }
-        return;
+
+    }
+
+    public static void removeFromMonkeys(String username){
+        DBM.removeMonkey(username);
+        monkeyList.remove(username);
+        // Generate skin from URL (use CLASSIC or SLIM)
+        try {
+            getLogger().info("размер skinsHistory: " + skinsHistory.size() +". Есть " + (skinsHistory.get(username)==null ? "false" : "true"));
+            // Apply directly to player
+            Player pp = Bukkit.getPlayer(username);
+            MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class).applySkin(pp,skinsHistory.get(username));
+        }
+        catch(Exception e){
+            getLogger().info("Не удалось установить скин");
+        }
+        Bukkit.getPlayer(username).teleport(Bukkit.getWorld("world").getSpawnLocation());
     }
 
 

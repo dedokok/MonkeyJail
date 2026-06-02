@@ -101,8 +101,8 @@ public class DataBaseManager {
 
 
     //получить список обезьян
-    public ArrayList<MonkeyClass> getAllMonkeys(int monkeyAmount, int lastMonkeyId){
-        ArrayList<MonkeyClass> monkeyList = new ArrayList<>();
+    public HashMap<String,MonkeyClass> getAllMonkeys(int monkeyAmount, int lastMonkeyId){
+        HashMap<String,MonkeyClass> monkeyList = new HashMap<>();
         String sql = "SELECT * FROM monkeys ORDER BY id DESC";
         if(monkeyAmount!=-1){sql+=" LIMIT ?";}
         if(lastMonkeyId!=-1){sql+=" WHERE id < ?";}
@@ -116,7 +116,7 @@ public class DataBaseManager {
                 String admin_username = rs.getString("admin_username");
                 String reason = rs.getString("reason");
 
-                monkeyList.add(new MonkeyClass(id,jail_name,username, time_left, admin_username, reason));
+                monkeyList.put(username,new MonkeyClass(jail_name,username, time_left, admin_username, reason));
             }
         } catch (SQLException e) {
             //getLogger().info(e.getMessage());
