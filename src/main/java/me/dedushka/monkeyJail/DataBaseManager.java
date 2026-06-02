@@ -208,7 +208,7 @@ public class DataBaseManager {
             else{
                 stmt.setString(1, jail.jail_name);
                 stmt.setString(2, jail.creatorName);
-                stmt.setString(3, jail.world.getName());
+                stmt.setString(3, jail.world);
                 stmt.setLong(4, toKey(jail.spawnBlock.x, jail.spawnBlock.y, jail.spawnBlock.z));
             }
             stmt.executeUpdate();
@@ -237,11 +237,10 @@ public class DataBaseManager {
                 String worldName = rs.getString("world");
                 long spawnKey    = rs.getLong("spawn_key");
 
-                World world = Bukkit.getWorld(worldName);
                 BlockPosClass spawn = new BlockPosClass(xFromKey(spawnKey), yFromKey(spawnKey), zFromKey(spawnKey));
                 Set<BlockPosClass> blocks = loadJailBlocks(jail_id);
 
-                jails.put(jail_name, new JailClass(jail_id,jail_name, world, creator, blocks, spawn));
+                jails.put(jail_name, new JailClass(jail_id,jail_name, worldName, creator, blocks, spawn));
             }
         } catch (Exception e) {
             getLogger().info("Ошибка loadAllJails");
@@ -267,11 +266,11 @@ public class DataBaseManager {
                 String world_name = rs.getString("world");
                 long spawnKey    = rs.getLong("spawn_key");
 
-                World world = Bukkit.getWorld(world_name);
+
                 BlockPosClass spawn_block = new BlockPosClass(xFromKey(spawnKey), yFromKey(spawnKey), zFromKey(spawnKey));
                 Set<BlockPosClass> blocks = loadJailBlocks(jail_id);
                 getLogger().info("Получил тюрьму");
-                jail = new JailClass(jail_id,jail_name,world,creator_name,blocks,spawn_block);
+                jail = new JailClass(jail_id,jail_name,world_name,creator_name,blocks,spawn_block);
             }
         } catch (Exception e) {
             getLogger().info("Ошибка loadAllJails");

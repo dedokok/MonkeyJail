@@ -96,7 +96,7 @@ public class JailLogic {
                             if (!jail.blocks.contains(playerPos)) {
                                 //getLogger().info("Прошёл в обезьянник 7");
                                 player.teleport(new Location(
-                                        jail.world,
+                                        Bukkit.getWorld(jail.world),
                                         jail.spawnBlock.x,
                                         jail.spawnBlock.y,
                                         jail.spawnBlock.z

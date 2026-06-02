@@ -1,4 +1,5 @@
 me\dedushka\monkeyJail\JailLogic.class
+me\dedushka\monkeyJail\Classes\JailProcessClass.class
 me\dedushka\monkeyJail\Classes\JailClass.class
 me\dedushka\monkeyJail\JailCommands$2.class
 me\dedushka\monkeyJail\Listeners\ShreakingListener.class

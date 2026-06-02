@@ -68,7 +68,7 @@ public final class MonkeyJail extends JavaPlugin {
     @Override
     public void onDisable() {
         JailCommands jC = new JailCommands();
-        jC.stopProcess();
+        jC.stopProcess(null);
 
     }
 
