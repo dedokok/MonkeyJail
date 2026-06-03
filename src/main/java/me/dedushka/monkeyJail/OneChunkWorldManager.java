@@ -57,7 +57,7 @@ public class OneChunkWorldManager {
             // Устанавливаем границу мира
             WorldBorder border = customWorld.getWorldBorder();
             border.setCenter(8, 8);
-            border.setSize(32);
+            border.setSize(16);
             border.setWarningDistance(0);
 
             // Отключаем автосохранение

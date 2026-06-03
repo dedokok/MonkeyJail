@@ -5,6 +5,7 @@ import me.dedushka.monkeyJail.Classes.JailClass;
 import me.dedushka.monkeyJail.Classes.MonkeyClass;
 import net.skinsrestorer.api.connections.MineSkinAPI;
 import net.skinsrestorer.api.connections.model.MineSkinResponse;
+import net.skinsrestorer.api.property.SkinApplier;
 import net.skinsrestorer.api.property.SkinProperty;
 import net.skinsrestorer.api.property.SkinVariant;
 import net.skinsrestorer.api.storage.PlayerStorage;
@@ -29,9 +30,10 @@ public class JailLogic {
     private static HashMap<String,MonkeyClass>updatedTimeMonkeys = new HashMap<>();
     public static HashMap<String, JailClass> jails= DBM.loadAllJails();
 
-    public static HashMap<String,SkinProperty>skinsHistory = new HashMap<>();
+    //public static HashMap<String,SkinProperty>skinsHistory = new HashMap<>();
 
     public static ArrayList<String> monkeys_shreaking = new ArrayList<>();
+    public static ArrayList<String> needToRemove = new ArrayList<>();
 
     private static MonkeyJail MJ;
     private static int ticks = 0;
@@ -120,16 +122,33 @@ public class JailLogic {
         DBM.removeMonkey(username);
         monkeyList.remove(username);
         // Generate skin from URL (use CLASSIC or SLIM)
-        try {
-            getLogger().info("размер skinsHistory: " + skinsHistory.size() +". Есть " + (skinsHistory.get(username)==null ? "false" : "true"));
-            // Apply directly to player
-            Player pp = Bukkit.getPlayer(username);
-            MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class).applySkin(pp,skinsHistory.get(username));
+        if(MonkeyJail.skinsRestorerAPI!=null) {
+            try {
+                PlayerStorage playerStorage = MonkeyJail.skinsRestorerAPI.getPlayerStorage();
+                SkinApplier<Player> applier = MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class);
+                playerStorage.removeSkinIdOfPlayer(Bukkit.getPlayer(username).getUniqueId());
+                applier.applySkin(Bukkit.getPlayer(username));
+
+                Player pp = Bukkit.getPlayer(username);
+                JailLogic.needToRemove.add(username);
+
+                //getLogger().info("размер skinsHistory: " + skinsHistory.size() + ". Есть " + (skinsHistory.get(username) == null ? "false" : "true"));
+                // Apply directly to player
+//                if(skinsHistory.get(username)!=null) {
+//                    Player pp = Bukkit.getPlayer(username);
+//                    MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class).applySkin(pp, skinsHistory.get(username));
+//                    JailLogic.needToRemove.add(username);
+//                }
+                //else{
+                    //JailCommands.setSkinFromUrl(Bukkit.getPlayer(username),"http://textures.minecraft.net/texture/1a4af718455d4aab528e7a61f86fa25e6a369d1768dcb13f7df319a713eb810b");
+
+                //}
+            } catch (Exception e) {
+                getLogger().info("Не удалось установить скин");
+            }
         }
-        catch(Exception e){
-            getLogger().info("Не удалось установить скин");
-        }
-        Bukkit.getPlayer(username).teleport(Bukkit.getWorld("world").getSpawnLocation());
+        //Bukkit.getPlayer(username).teleport(Bukkit.getWorld("world").getSpawnLocation());
+        Bukkit.getPlayer(username).setHealth(0);
     }
 
 

@@ -13,7 +13,7 @@ public class JailClass {
     public String jail_name;
     public String world;
     public String creatorName;
-    public Set<BlockPosClass> blocks;
+    public Set<BlockPosClass> blocks = new HashSet<>();
     public BlockPosClass spawnBlock;
     public JailClass(){}
     public JailClass(int jail_id,String jail_name, String world,String creatorName,Set<BlockPosClass> blocks, BlockPosClass spawnBlock){

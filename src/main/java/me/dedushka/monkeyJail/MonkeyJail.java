@@ -16,11 +16,12 @@ import java.nio.file.Files;
 public final class MonkeyJail extends JavaPlugin {
     private DataBaseManager DBM = new DataBaseManager(this);
     private OneChunkWorldManager worldManager;
-    private static MonkeyJail instance;
+    public static MonkeyJail instance;
     public static SkinsRestorer skinsRestorerAPI;
 
     @Override
     public void onEnable() {
+        instance = this;
         extractStructure();
         saveDefaultConfig();
         checkDataBase();
@@ -69,6 +70,7 @@ public final class MonkeyJail extends JavaPlugin {
     public void onDisable() {
         JailCommands jC = new JailCommands();
         jC.stopProcess(null);
+        JailCommands.tpAllFromShreakingMachine();
 
     }
 

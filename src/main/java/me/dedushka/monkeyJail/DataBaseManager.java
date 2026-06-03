@@ -167,6 +167,7 @@ public class DataBaseManager {
 
     public void saveJailBlocks(int jailId, JailClass jail, boolean isEdit) throws SQLException {
         // Сначала удаляем старые блоки этой тюрьмы
+        getLogger().info("Сохранение блоков тюрьмы. Количество: "+ jail.blocks.size());
         String deleteSql = "DELETE FROM blocks WHERE jail_id = ?";
         try (PreparedStatement deleteStmt = connection.prepareStatement(deleteSql)) {
             deleteStmt.setInt(1, jailId);
@@ -177,13 +178,20 @@ public class DataBaseManager {
         String insertSql = "INSERT OR IGNORE INTO blocks (jail_id, block_key) VALUES (?, ?)";
         try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
             connection.setAutoCommit(false);
-
+            int count = 0;
             for (BlockPosClass block : jail.blocks) {
+                //getLogger().info("Вставил блок "+count);
                 long key = toKey(block.x, block.y, block.z);
                 insertStmt.setInt(1, jailId);
                 insertStmt.setLong(2, key);
                 insertStmt.addBatch();
+                //insertStmt.executeBatch();
+                if (count % 1000 == 0) {
+                    insertStmt.executeBatch();
+                }
+                count++;
             }
+
 
             insertStmt.executeBatch();
             connection.commit();

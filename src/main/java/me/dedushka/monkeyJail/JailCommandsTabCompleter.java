@@ -48,7 +48,8 @@ public class JailCommandsTabCompleter implements TabCompleter {
         }
         //тут /monkey edit/delete/show/tp <название тюрьмы>
         else if (args.length == 2 && oneArgumentAndJailName.contains(args[0])) {
-            ArrayList<String> options = DBM.getJailNames();
+            ArrayList<String> options = new ArrayList<>(JailLogic.jails.keySet());
+
 
             String partial = args[1];
             for (String option : options) {
@@ -59,25 +60,53 @@ public class JailCommandsTabCompleter implements TabCompleter {
         }
         //тут /monkey jail <ник>
         else if (args.length == 2 && args[0].equals("jail")) {
+            String partial = args[1];
             for (Player player : Bukkit.getOnlinePlayers()) {
-                completions.add(player.getName());
+                if (player.getName().startsWith(partial)) {
+                    completions.add(player.getName());
+                }
             }
         }
         //тут /monkey unjail <ник>. Сделал отдельно, т.к. надо,чтобы отображались только заключённые, а не все игроки
         else if (args.length == 2 && args[0].equals("unjail")) {
-            completions.addAll(JailLogic.monkeyList.keySet());
+            String partial = args[1];
+            for(String monkey_name : JailLogic.monkeyList.keySet()){
+                if (monkey_name.startsWith(partial)) {
+                    completions.add(monkey_name);
+                }
+            }
+
+            //completions.addAll(JailLogic.monkeyList.keySet());
         }
-        //тут будет /monkey create ... и /monkey editJail <название_тюрьмы> ...
-        else if ((args.length == 2 && args[0].equalsIgnoreCase("createJail")) ||
-                (args.length == 3 && args[0].equalsIgnoreCase("editJail") && DBM.getJailNames().contains(args[1]))
+        //тут будет /monkey create ...
+        else if ((args.length == 2 && args[0].equalsIgnoreCase("createJail"))
         ) {
             String[] options = {"help", "start", "setFA", "setSA", "setHeight", "stop", "done",
             "addB","removeB","show","setName","setSB"};
             //getLogger().info("Прошёл в аргументы после /monkey create");
             //getLogger().info("Получил аргумент /monkey create "+option);
             //getLogger().info("Прошёл в if у /monkey create "+option);
-            completions.addAll(Arrays.asList(options));
+            //completions.addAll(Arrays.asList(options));
+
+            String partial = args[1];
+            for (String option : options) {
+                if (option.startsWith(partial)) {
+                    completions.add(option);
+                }
+            }
         }
+        // /monkey editJail <название_тюрьмы> ...
+        else if(args.length == 3 && args[0].equalsIgnoreCase("editJail") && JailLogic.jails.containsKey(args[1])){
+            String[] options = {"help", "start", "setFA", "setSA", "setHeight", "stop", "done",
+                    "addB","removeB","show","setName","setSB"};
+            String partial = args[2];
+            for (String option : options) {
+                if (option.startsWith(partial)) {
+                    completions.add(option);
+                }
+            }
+        }
+
         // /monkey jail/unjail <ник> <название_тюрьмы)
 
 
