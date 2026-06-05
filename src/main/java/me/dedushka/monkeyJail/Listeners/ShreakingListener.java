@@ -41,19 +41,19 @@ public class ShreakingListener implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event){
         if(JailCommands.shreakLocations.containsKey(event.getPlayer().getName())) {
-            event.setCancelled(true);
+            //event.setCancelled(true);
         }
     }
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event){
         if(JailCommands.shreakLocations.containsKey(event.getPlayer().getName())) {
-            event.setCancelled(true);
+            //event.setCancelled(true);
         }
     }
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event){
         if(JailCommands.shreakLocations.containsKey(event.getPlayer().getName())) {
-            event.setCancelled(true);
+            //event.setCancelled(true);
         }
     }
     @EventHandler

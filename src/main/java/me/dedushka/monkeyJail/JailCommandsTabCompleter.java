@@ -15,7 +15,6 @@ import java.util.List;
 import static org.bukkit.Bukkit.getLogger;
 
 public class JailCommandsTabCompleter implements TabCompleter {
-    DataBaseManager DBM = new DataBaseManager();
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command,
                                       String alias, String[] args) {
@@ -27,20 +26,13 @@ public class JailCommandsTabCompleter implements TabCompleter {
         // args[1] - второй аргумент (start, stop, done)
 
         ArrayList<String> oneArgumentAndJailName = new ArrayList<>(List.of("editJail","deleteJail","showJail","tpJail"));
-        //ArrayList<String> oneArgumentAndUsername = new ArrayList<>(List.of("jail","unjail"));
 
-
-        //тут будет /monkey ...
-        //getLogger().info("Количество аргументов: "+args.length);
+        // /monkey ...
         if (args.length == 1) {
-            //getLogger().info("Прошёл в аргументы /monkey");
-            String[] options = {"createJail","jail","editJail","showJail","unjail","deleteJail","tpJail"};
+            String[] options = {"fuck","createJail","jail","editJail","showJail","unjail","deleteJail","tpJail"};
             String partial = args[0];
-
             for (String option : options) {
-               // getLogger().info("Получил аргумент /monkey "+option);
                 if (option.startsWith(partial)) {
-                    //getLogger().info("Прошёл в if у /monkey "+option);
                     completions.add(option);
                 }
             }
@@ -49,8 +41,6 @@ public class JailCommandsTabCompleter implements TabCompleter {
         //тут /monkey edit/delete/show/tp <название тюрьмы>
         else if (args.length == 2 && oneArgumentAndJailName.contains(args[0])) {
             ArrayList<String> options = new ArrayList<>(JailLogic.jails.keySet());
-
-
             String partial = args[1];
             for (String option : options) {
                 if (option.startsWith(partial)) {
@@ -67,26 +57,20 @@ public class JailCommandsTabCompleter implements TabCompleter {
                 }
             }
         }
-        //тут /monkey unjail <ник>. Сделал отдельно, т.к. надо,чтобы отображались только заключённые, а не все игроки
-        else if (args.length == 2 && args[0].equals("unjail")) {
+        //тут /monkey unjail <ник> и /monkey fuck <ник>. Сделал отдельно, т.к. надо,чтобы отображались только заключённые, а не все игроки
+        else if (args.length == 2 && (args[0].equals("unjail") || args[0].equals("fuck"))) {
             String partial = args[1];
             for(String monkey_name : JailLogic.monkeyList.keySet()){
                 if (monkey_name.startsWith(partial)) {
                     completions.add(monkey_name);
                 }
             }
-
-            //completions.addAll(JailLogic.monkeyList.keySet());
         }
         //тут будет /monkey create ...
         else if ((args.length == 2 && args[0].equalsIgnoreCase("createJail"))
         ) {
             String[] options = {"help", "start", "setFA", "setSA", "setHeight", "stop", "done",
             "addB","removeB","show","setName","setSB"};
-            //getLogger().info("Прошёл в аргументы после /monkey create");
-            //getLogger().info("Получил аргумент /monkey create "+option);
-            //getLogger().info("Прошёл в if у /monkey create "+option);
-            //completions.addAll(Arrays.asList(options));
 
             String partial = args[1];
             for (String option : options) {
@@ -106,10 +90,16 @@ public class JailCommandsTabCompleter implements TabCompleter {
                 }
             }
         }
-
-        // /monkey jail/unjail <ник> <название_тюрьмы)
-
-
+        // /monkey jail <ник_игрока>
+        else if(args.length == 3 && args[0].equalsIgnoreCase("jail")){
+            String[] options = JailLogic.jails.keySet().toArray(new String[0]);
+            String partial = args[2];
+            for (String option : options) {
+                if (option.startsWith(partial)) {
+                    completions.add(option);
+                }
+            }
+        }
         return completions;
     }
 }

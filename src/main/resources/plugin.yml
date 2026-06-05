@@ -1,7 +1,7 @@
 name: MonkeyJail
-version: '1.0-SNAPSHOT'
+version: 'R0.1-SNAPSHOT'
 main: me.dedushka.monkeyJail.MonkeyJail
-api-version: '1.21'
+api-version: '1.21.11'
 softdepend:
   - SkinsRestorer
 

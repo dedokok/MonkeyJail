@@ -12,9 +12,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 
+import static org.bukkit.Bukkit.getLogger;
+
 
 public final class MonkeyJail extends JavaPlugin {
-    private DataBaseManager DBM = new DataBaseManager(this);
+    private DataBaseManager DBM = new DataBaseManager();
     private OneChunkWorldManager worldManager;
     public static MonkeyJail instance;
     public static SkinsRestorer skinsRestorerAPI;
@@ -25,7 +27,7 @@ public final class MonkeyJail extends JavaPlugin {
         extractStructure();
         saveDefaultConfig();
         checkDataBase();
-        new JailLogic(this);
+        new JailLogic(this).startJail();
         getServer().getPluginManager().registerEvents(new EventListener(), this);
 
         Plugin skinsRest = Bukkit.getPluginManager().getPlugin("SkinsRestorer");
@@ -36,33 +38,10 @@ public final class MonkeyJail extends JavaPlugin {
         else{
             getLogger().info("SkinsRestorer не загружен. У обезьян не будет скина");
         }
-        getCommand("monkey").setExecutor(new JailCommands(this,skinsRestorerAPI));
+        getCommand("monkey").setExecutor(new JailCommands());
         getCommand("monkey").setTabCompleter(new JailCommandsTabCompleter());
 
-
-
-
-
-
-        //getServer().getPluginManager().registerEvents(new EventListener(),this);
-
-        //getServer().getPluginManager().registerEvents(new CoreProtectINC(this), this);
-
-        //getCommand("xfinder").setExecutor(new CommandManager());
-
-
-        //new VeinGUI(this);
-        //new ManageGUI(this);
-        //new BlackListGUI(this);
-        // Plugin startup logic
-
         worldManager = new OneChunkWorldManager(this);
-
-
-
-
-        //new JailCommands(this);
-        new JailLogic(this).startJail();
 
     }
 
@@ -79,9 +58,9 @@ public final class MonkeyJail extends JavaPlugin {
         File dbFile = new File(dataFolder, "database.db");
         if (dbFile.exists()) {
             DBM.connectDB();
-            //getLogger().info("База данных найдена!");
+            getLogger().info("База данных найдена");
         } else {
-            //getLogger().info("Файл базы данных не найден, будет создан новый");
+            getLogger().info("Файл базы данных не найден, будет создан новый");
             DBM.createDB();
         }
     }
@@ -111,7 +90,7 @@ public final class MonkeyJail extends JavaPlugin {
                 Files.copy(inputStream, targetFile.toPath());
                 getLogger().info("Структура shreakmachine.nbt скопирована в папку плагина!");
             } catch (IOException e) {
-                e.printStackTrace();
+                getLogger().warning("Не удалось получить структуру траходрома");
             }
         }
     }

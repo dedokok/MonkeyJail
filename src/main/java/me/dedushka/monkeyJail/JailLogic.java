@@ -25,18 +25,14 @@ import java.util.Optional;
 import static org.bukkit.Bukkit.getLogger;
 
 public class JailLogic {
-    private static DataBaseManager DBM = new DataBaseManager();
+    public static DataBaseManager DBM = new DataBaseManager();
     public static HashMap<String,MonkeyClass>monkeyList = DBM.getAllMonkeys(-1,-1);
-    private static HashMap<String,MonkeyClass>updatedTimeMonkeys = new HashMap<>();
+    public static HashMap<String,MonkeyClass>updatedTimeMonkeys = new HashMap<>();
     public static HashMap<String, JailClass> jails= DBM.loadAllJails();
-
-    //public static HashMap<String,SkinProperty>skinsHistory = new HashMap<>();
-
     public static ArrayList<String> monkeys_shreaking = new ArrayList<>();
     public static ArrayList<String> needToRemove = new ArrayList<>();
-
-    private static MonkeyJail MJ;
-    private static int ticks = 0;
+    public static MonkeyJail MJ;
+    public static int ticks = 0;
     public static boolean isTimeLeftUpdated = false;
 
     public JailLogic(MonkeyJail MJ){
@@ -56,33 +52,22 @@ public class JailLogic {
 
     public void startJail(){
         Bukkit.getScheduler().runTaskTimer(MJ, () -> {
-
-            //JailCommands jC = new JailCommands();
-            //getLogger().info("Размер списка: "+jC.blocksDisplay.size());
-
             doEveryLoop();
         }, 0L, 10L);
     }
 
-
+    //что делать каждую итерацию
     public void doEveryLoop(){
         ticks+=10;
-        //ArrayList<Player>onlinePlayers = Bukkit.getOnlinePlayers();
         Iterator<MonkeyClass> it = monkeyList.values().iterator();
-        //getLogger().info("Количество обезьян: "+monkeyList.size());
         while (it.hasNext()) {
-            //getLogger().info("Прошёл в обезьянник 1");
             MonkeyClass monkey = it.next();
-            if(!monkeys_shreaking.contains(monkey.username)) {
+            if (!monkeys_shreaking.contains(monkey.username)) {
                 Player player = Bukkit.getPlayer(monkey.username);
-                //getLogger().info("Прошёл в обезьянник 2");
                 if (player != null && player.isOnline()) {
-                    //getLogger().info("Прошёл в обезьянник 3");
                     if (monkey.time_left <= 0) {
-                        //getLogger().info("Прошёл в обезьянник 4");
                         removeFromMonkeys(monkey.username);
                     } else {
-                        //getLogger().info("Прошёл в обезьянник 5");
                         monkey.time_left -= 10;
                         updatedTimeMonkeys.put(monkey.username, monkey);
                         isTimeLeftUpdated = true;
@@ -92,19 +77,15 @@ public class JailLogic {
                         int z = (int) Math.floor(pL.getZ());
                         BlockPosClass playerPos = new BlockPosClass(x, y, z);
                         JailClass jail = jails.get(monkey.jail_name);
-                        //getLogger().info("Название тюрьмы обезьяны: "+monkey.jail_name + ". Найдена: "+(jail==null ? "false" : "true"));
-                        if (jail != null) {
-                            //getLogger().info("Прошёл в обезьянник 6");
-                            if (!jail.blocks.contains(playerPos)) {
-                                //getLogger().info("Прошёл в обезьянник 7");
-                                player.teleport(new Location(
-                                        Bukkit.getWorld(jail.world),
-                                        jail.spawnBlock.x,
-                                        jail.spawnBlock.y,
-                                        jail.spawnBlock.z
-                                ));
-                            }
+                        if (jail != null && !jail.blocks.contains(playerPos)) {
+                            player.teleport(new Location(
+                                    Bukkit.getWorld(jail.world),
+                                    jail.spawnBlock.x,
+                                    jail.spawnBlock.y,
+                                    jail.spawnBlock.z
+                            ));
                         }
+
                     }
 
                 }
@@ -118,59 +99,30 @@ public class JailLogic {
 
     }
 
+    //процесс удаления обезьяны из тюрьмы
     public static void removeFromMonkeys(String username){
-        DBM.removeMonkey(username);
-        monkeyList.remove(username);
-        // Generate skin from URL (use CLASSIC or SLIM)
-        if(MonkeyJail.skinsRestorerAPI!=null) {
-            try {
-                PlayerStorage playerStorage = MonkeyJail.skinsRestorerAPI.getPlayerStorage();
-                SkinApplier<Player> applier = MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class);
-                playerStorage.removeSkinIdOfPlayer(Bukkit.getPlayer(username).getUniqueId());
-                applier.applySkin(Bukkit.getPlayer(username));
+        if(Bukkit.getPlayer(username)==null){
+            return;
+        }
+        if(Bukkit.getPlayer(username)!=null) {
+            DBM.removeMonkey(username);
+            monkeyList.remove(username);
+            Location location = Bukkit.getPlayer(username).getLocation();
+            Bukkit.getPlayer(username).teleport(new Location(location.getWorld(), location.getX(), 1000, location.getZ()));
+            JailLogic.needToRemove.add(username);
+            Bukkit.getPlayer(username).setHealth(0);
 
-                Player pp = Bukkit.getPlayer(username);
-                JailLogic.needToRemove.add(username);
 
-                //getLogger().info("размер skinsHistory: " + skinsHistory.size() + ". Есть " + (skinsHistory.get(username) == null ? "false" : "true"));
-                // Apply directly to player
-//                if(skinsHistory.get(username)!=null) {
-//                    Player pp = Bukkit.getPlayer(username);
-//                    MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class).applySkin(pp, skinsHistory.get(username));
-//                    JailLogic.needToRemove.add(username);
-//                }
-                //else{
-                    //JailCommands.setSkinFromUrl(Bukkit.getPlayer(username),"http://textures.minecraft.net/texture/1a4af718455d4aab528e7a61f86fa25e6a369d1768dcb13f7df319a713eb810b");
-
-                //}
-            } catch (Exception e) {
-                getLogger().info("Не удалось установить скин");
+            if (MonkeyJail.skinsRestorerAPI != null) {
+                try {
+                    PlayerStorage playerStorage = MonkeyJail.skinsRestorerAPI.getPlayerStorage();
+                    SkinApplier<Player> applier = MonkeyJail.skinsRestorerAPI.getSkinApplier(Player.class);
+                    playerStorage.removeSkinIdOfPlayer(Bukkit.getPlayer(username).getUniqueId());
+                    applier.applySkin(Bukkit.getPlayer(username));
+                } catch (Exception e) {
+                    getLogger().info("Не удалось установить скин");
+                }
             }
         }
-        //Bukkit.getPlayer(username).teleport(Bukkit.getWorld("world").getSpawnLocation());
-        Bukkit.getPlayer(username).setHealth(0);
     }
-
-
-    public JailClass getJail(String jailName){
-        //BlockPosClass bP = new BlockPos(123,62,321);
-        //MJ.getConfig().set("block_pos",bP);
-
-        //saveConfig();
-        JailClass jail = MJ.getConfig().getObject("jails."+jailName,JailClass.class);
-        if(jail==null){
-            getLogger().info("Ошибка. Такой тюрьмы нет");
-            return null;
-        }
-        getLogger().info("Тюрьма " +jailName + " успешно получена");
-        return jail;
-//        BlockPos Bp2 = getConfig().getObject("block_pos",BlockPos.class);
-//        getLogger().info(Bp2.toString());
-    }
-
-
-
-
-
-
 }

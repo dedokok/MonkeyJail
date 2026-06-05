@@ -3,6 +3,8 @@ package me.dedushka.monkeyJail;
 import me.dedushka.monkeyJail.Classes.BlockPosClass;
 import me.dedushka.monkeyJail.Classes.JailProcessClass;
 import me.dedushka.monkeyJail.Listeners.ShreakingListener;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.skinsrestorer.api.SkinsRestorer;
@@ -17,12 +19,11 @@ import org.bukkit.Material;
 import org.bukkit.World;
 
 
-
-
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Cow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
@@ -37,40 +38,10 @@ import java.util.*;
 import static org.bukkit.Bukkit.getLogger;
 
 public class JailCommands implements CommandExecutor{
-   // static int creatingStage = 0;
-   // static String creatorName = null;
-    //static BlockPosClass angle1 = null;
-    //static BlockPosClass angle2 = null;
-    //static String jail_name = null;
-   // static int jail_id = -1;
-    //static int height = 1;
-    //static World world = null;
-    //public static Map<BlockPosClass, BlockDisplay> blocksDisplay = new HashMap<>();
-    //static Set<BlockPosClass> blocks = null;
-    //static BlockPosClass spawnBlock = null;
     static DataBaseManager DBM = new DataBaseManager();
-    //private static SkinsRestorer skinsRestorerAPI;
     public static HashMap<String, JailProcessClass> jailsCreationProcesses = new HashMap<>();
-
-    //static boolean isShowBorder = true;
-    //static boolean isShowing = false;
-
     static boolean isTiny = false;
     public static HashMap<String,Location>shreakLocations = new HashMap<>();
-
-    static private MonkeyJail MJ;
-
-    public JailCommands(MonkeyJail MJ, SkinsRestorer skinsRestorerAPI){
-        this.MJ = MJ;
-        //this.skinsRestorerAPI = skinsRestorerAPI;
-//        Bukkit.getScheduler().runTaskTimer(MJ, () -> {
-//
-//            //JailCommands jC = new JailCommands();
-//            //getLogger().info("Размер списка: "+jC.blocksDisplay.size());
-//
-//            getLogger().info("Размер списка: "+blocksDisplay.size());
-//        }, 0L, 10L);
-    }
     public JailCommands(){}
 
     @Override
@@ -78,26 +49,33 @@ public class JailCommands implements CommandExecutor{
         if (sender instanceof Player) {
             Player player = (Player) sender;
             switch (args[0].toLowerCase()) {
-                case "createjail":{
-                    return createCommandExecutor(args,player);
+                case "createjail": {
+                    createCommandExecutor(args, player);
+                    return true;
                 }
-                case "jail":{
-                    return jailMonkeyCommandExecutor(args,player);
+                case "jail": {
+                    jailMonkeyCommandExecutor(args, player);
+                    return true;
                 }
-                case "unjail":{
-                    return unJailMonkeyCommandExecutor(args,player);
+                case "unjail": {
+                    unJailMonkeyCommandExecutor(args, player);
+                    return true;
                 }
-                case "editjail":{
-                    return editJailCommandExecutor(args,player);
+                case "editjail": {
+                    editJailCommandExecutor(args, player);
+                    return true;
                 }
-                case "fuck":{
-                    return fuckCommandExecutor(args,player);
+                case "fuck": {
+                    shreakCommandExecutor(args, player);
+                    return true;
                 }
-                case "deletejail":{
-                    return deleteJailCommandExecutor(args,player);
+                case "deletejail": {
+                    deleteJailCommandExecutor(args, player);
+                    return true;
                 }
-                case "tpjail":{
-                    return tpJailCommandExecutor(args,player);
+                case "tpjail": {
+                    tpJailCommandExecutor(args, player);
+                    return true;
                 }
             }
         } else {
@@ -150,7 +128,7 @@ public class JailCommands implements CommandExecutor{
     }
 
 
-    boolean fuckCommandExecutor(String[] args, Player player) {
+    boolean shreakCommandExecutor(String[] args, Player player) {
         //0 - fuck
         //1 - ник
         if (args.length < 2) {
@@ -159,13 +137,33 @@ public class JailCommands implements CommandExecutor{
         }
 
         String monkey_name = args[1];
+
+        if(player.getName().equals(monkey_name)){
+            player.sendMessage("§cСебя нельзя отправить на траходром!");
+            return false;
+        }
+
+        if(JailLogic.monkeyList.containsKey(player.getName())){
+            player.sendMessage("§cТы обезьяна!");
+            return false;
+        }
+
+        if(!JailLogic.monkeyList.containsKey(monkey_name)){
+            player.sendMessage("§cЭто не обезьяна!");
+            return false;
+        }
+
         Player player_monkey = Bukkit.getPlayer(monkey_name);
-        if (player_monkey != null && !player_monkey.isOnline()) {
+        if (player_monkey == null) {
             player.sendMessage("§cОбезьяна не в сети!");
             return false;
         }
         if(!JailLogic.monkeyList.containsKey(monkey_name)){
             player.sendMessage("§cЭто не обезьяна!");
+            return false;
+        }
+        if(player.getLocation().distance(player_monkey.getLocation())>player_monkey.getWorld().getViewDistance()*16){
+            player.sendMessage("§cВы должны быть возле обезьяны");
             return false;
         }
         if (isTiny) {
@@ -174,22 +172,22 @@ public class JailCommands implements CommandExecutor{
         }
 
 
-        OneChunkWorldManager worldManager = (MJ).getWorldManager();
-        World myWorld = worldManager.createWorld("my_custom_world", "shreakmachine");
+        OneChunkWorldManager worldManager = (MonkeyJail.getInstance()).getWorldManager();
+        World myWorld = worldManager.createWorld("trahodrom", "shreakmachine");
 
         if (myWorld == null) {
             player.sendMessage("§cНе удалось создать или загрузить мир!");
             return true;
         }
 
-        // Телепортируем игрока
         JailLogic.monkeys_shreaking.add(monkey_name);
+
         Location teleportLocation = new Location(myWorld, 8.5, 64, 8.5, -90, 0);
-        PluginManager pM = MJ.getServer().getPluginManager();
-        //final EventListener[] eventListener = {new EventListener()};
+        PluginManager pM = MonkeyJail.getInstance().getServer().getPluginManager();
+
         ShreakingListener shreakingListener = new ShreakingListener();
         ShreakingListener.monkey_names.add(player_monkey.getName());
-        pM.registerEvents(shreakingListener, MJ);
+        pM.registerEvents(shreakingListener, MonkeyJail.getInstance());
 
         Location playerLocation = player.getLocation();
         Location monkeyLocation = player_monkey.getLocation();
@@ -200,47 +198,20 @@ public class JailCommands implements CommandExecutor{
 
         player.teleport(new Location(myWorld, 7, 64, 4,0,0));
 
-
-
-
-
         isTiny = true;
-//        new BukkitRunnable() {
-//            int cc = 200;
+
         player_monkey.setSneaking(true);
-//
-//            @Override
-//            public void run() {
-//                if (cc <= 0) {
-//                    this.cancel();
-//                    return;
-//                }
-//                cc--;
-//
-//                if (player_monkey.isOnline()) {
-//
-//
-//
-//                    player.hidePlayer(MJ, player);
-//                    player.showPlayer(MJ, player);
-//                    player_monkey.setSneaking(true);
-//                }
-//            }
-//
-//
-//        }.runTaskTimer(MJ, 0L, 1L);
-        int count = 200;
+        BossBar halfBar = BossBar.bossBar(Component.text("Осталось 10 секунд"), 1f, BossBar.Color.GREEN, BossBar.Overlay.NOTCHED_10);
+        player_monkey.showBossBar(halfBar);
+        player.showBossBar(halfBar);
+
         new BukkitRunnable() {
             int secondsLeft = 10;
-
             @Override
             public void run() {
                 if (secondsLeft <= 0)
                 {
-
                     JailLogic.monkeys_shreaking.remove(monkey_name);
-
-                    // Таймер закончился
                     player.sendMessage("§aВремя вышло!");
                     player_monkey.setSneaking(false);
                     player.teleport(playerLocation);
@@ -248,47 +219,22 @@ public class JailCommands implements CommandExecutor{
                     HandlerList.unregisterAll(shreakingListener);
                     shreakLocations.remove(player.getName());
                     shreakLocations.remove(player_monkey.getName());
-                    //HandlerList.unregisterAll(eventListener[0]);
-                   // eventListener[0] =null;
 
-                    // Выгружаем мир (true - сохранить перед выгрузкой)
-
-                   // Bukkit.unloadWorld(myWorld, true);
-
-                   // File worldFolder = myWorld.getWorldFolder();
-                    //deleteDirectory(worldFolder);
+                    player.hideBossBar(halfBar);
+                    player_monkey.hideBossBar(halfBar);
 
                     isTiny = false;
                     this.cancel();
                     return;
                 }
-
-                // Каждую секунду
-                player.sendMessage("§eОсталось: §6" + secondsLeft + " §eсекунд");
+                halfBar.progress((float)secondsLeft/10f);
+                halfBar.name(Component.text("Осталось "+secondsLeft+" секунд"));
                 secondsLeft--;
             }
-        }.runTaskTimer(MJ, 0L, 20L); // 0 тиков задержка, 20 тиков = 1 секунда
+        }.runTaskTimer(MonkeyJail.getInstance(), 0L, 20L); // 0 тиков задержка, 20 тиков = 1 секунда
 
         return false;
     }
-
-    private void deleteDirectory(File directory) {
-        if (directory.exists()) {
-            File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        deleteDirectory(file);
-                    } else {
-                        file.delete();
-                    }
-                }
-            }
-            directory.delete();
-        }
-    }
-
-
 
     boolean jailMonkeyCommandExecutor(String[] args, Player player){
         //0 - jail
@@ -362,17 +308,30 @@ public class JailCommands implements CommandExecutor{
             return false;
         }
 
+
         getLogger().info("Прошёл в разобезьянник 3");
-        if(DBM.isMonkeyInJail(args[1])){
+        if(JailLogic.monkeyList.containsKey(args[1])){
+            getLogger().info("Время обезьяны до: "+JailLogic.monkeyList.get(args[1]).time_left);
+            if(JailLogic.monkeyList.get(args[1]).time_left<=0){
+                return false;
+            }
+
+
             getLogger().info("Прошёл в разобезьянник 4");
             //DBM.removeMonkey(args[1]);
-            Bukkit.broadcastMessage("§c"+player.getName()+" выпустил обезьяну " + args[1] + " из зоопарка"+((args.length==4 && args[3]!=null) ? (" по причине: " +String.join(" ", Arrays.copyOfRange(args, 3, args.length))) : "." )+".");
-            //Bukkit.getPlayer(args[1]).teleport(Bukkit.getWorld("world").getSpawnLocation());
-            JailLogic.removeFromMonkeys(args[1]);
+            if(JailLogic.monkeyList.get(args[1]).time_left>0) {
+                Bukkit.broadcastMessage("§c" + player.getName() + " выпустил обезьяну " + args[1] + " из зоопарка" + ((args.length == 4 && args[3] != null) ? (" по причине: " + String.join(" ", Arrays.copyOfRange(args, 3, args.length))) : "") + ".");
+
+                //Bukkit.getPlayer(args[1]).teleport(Bukkit.getWorld("world").getSpawnLocation());
+                JailLogic.monkeyList.get(args[1]).time_left = 0;
+                getLogger().info("Время обезьяны после: "+JailLogic.monkeyList.get(args[1]).time_left);
+
+                JailLogic.removeFromMonkeys(args[1]);
+
+            }
 
         }
 
-        new JailLogic().updateMonkeyList();
 
         return true;
     }
@@ -395,44 +354,54 @@ public class JailCommands implements CommandExecutor{
                 return true;
             }
             case "start": {
-                return createStartCommandExecutor(player,null);
+                createStartCommandExecutor(player, null);
+                return true;
             }
 
             case "setFA": {
-                return setFACommandExecutor(player);
+                setFACommandExecutor(player);
+                return true;
             }
             case "setSA": {
-                return createSetSACommandExecutor(player);
+                createSetSACommandExecutor(player);
+                return true;
             }
 
             case "setHeight": {
-                return createSetHeightCommandExecutor(args, player);
+                createSetHeightCommandExecutor(args, player);
+                return true;
             }
             case "show": {
-                return showCommandExecutor(player,true);
+                showCommandExecutor(player, true);
+                return true;
             }
             case "stop": {
                 stopProcess(player.getName());
                 return true;
             }
             case "setName": {
-                return createSetNameCommandExecutor(args, player);
+                createSetNameCommandExecutor(args, player);
+                return true;
             }
             case "removeB": {
-                return createRemoveBCommandExecutor(args,player);
+                createRemoveBCommandExecutor(args, player);
+                return true;
             }
-            case "addB":{
-                return createAddBCommandExecutor(args,player);
+            case "addB": {
+                createAddBCommandExecutor(args, player);
+                return true;
             }
-            case "done":{
-                return createDoneCommandExecutor(player,false);
+            case "done": {
+                createDoneCommandExecutor(player, false);
+                return true;
             }
-            case "setSB":{
-                return createSetSBCommandExecutor(player);
+            case "setSB": {
+                createSetSBCommandExecutor(player);
+                return true;
             }
             default: {
                 player.sendMessage("§cТакой команды нет!");
-                return false;
+                return true;
             }
         }
 
@@ -455,44 +424,52 @@ public class JailCommands implements CommandExecutor{
                 return true;
             }
             case "start": {
-                return createStartCommandExecutor(player,jail_name);
+                createStartCommandExecutor(player, jail_name);
+                return true;
             }
-
             case "setFA": {
-                return setFACommandExecutor(player);
+                setFACommandExecutor(player);
+                return true;
             }
             case "setSA": {
-                return createSetSACommandExecutor(player);
+                createSetSACommandExecutor(player);
+                return true;
             }
-
             case "setHeight": {
-                return createSetHeightCommandExecutor(args, player);
+                createSetHeightCommandExecutor(args, player);
+                return true;
             }
             case "show": {
-                return showCommandExecutor(player, true);
+                showCommandExecutor(player, true);
+                return true;
             }
             case "stop": {
                 stopProcess(player.getName());
                 return true;
             }
             case "setName": {
-                return createSetNameCommandExecutor(args, player);
+                createSetNameCommandExecutor(args, player);
+                return true;
             }
             case "removeB": {
-                return createRemoveBCommandExecutor(args,player);
+                createRemoveBCommandExecutor(args, player);
+                return true;
             }
-            case "addB":{
-                return createAddBCommandExecutor(args,player);
+            case "addB": {
+                createAddBCommandExecutor(args, player);
+                return true;
             }
-            case "done":{
-                return createDoneCommandExecutor(player, true);
+            case "done": {
+                createDoneCommandExecutor(player, true);
+                return true;
             }
-            case "setSB":{
-                return createSetSBCommandExecutor(player);
+            case "setSB": {
+                createSetSBCommandExecutor(player);
+                return true;
             }
             default: {
                 player.sendMessage("§cТакой команды нет!");
-                return false;
+                return true;
             }
         }
     }
@@ -711,9 +688,9 @@ public class JailCommands implements CommandExecutor{
             player.sendMessage("§cОшибка. Начните создание/редактирование тюрьмы");
             return false;
         }
-        if(jailProcess.world!=null && jailProcess.blocks!=null && jailProcess.spawnBlock!=null){
+        if(jailProcess.jail_name !=null && jailProcess.world!=null && jailProcess.blocks!=null && jailProcess.spawnBlock!=null){
             jailProcess.creatorName=player.getName();
-            addJailToDataBase(jailProcess, player,isEdit);
+            addJailToDataBase(jailProcess,isEdit);
 
             stopProcess(player.getName());
             new JailLogic().updateJailList();
@@ -730,6 +707,10 @@ public class JailCommands implements CommandExecutor{
             }
             if(jailProcess.spawnBlock==null){
                 player.sendMessage("§cОшибка. Нет позиции спавна");
+            }
+            if(jailProcess.jail_name==null){
+                player.sendMessage("§cОшибка. Нет имени тюрьмы");
+
             }
             return false;
         }
@@ -896,25 +877,15 @@ public class JailCommands implements CommandExecutor{
     }
 
 
+    //добавить тюрьму в БД
+    public void addJailToDataBase(JailProcessClass jailProcess, boolean isEdit){
 
-    public void addJailToDataBase(JailProcessClass jailProcess, Player player, boolean isEdit){
-        try {
-            //int jail_id = DBM.getJailCount();
-            int jail_id = -1;
             if(isEdit){
-                jail_id = jailProcess.jail_id;
                 DBM.saveJail(jailProcess,isEdit);
             }
             else{
-                jail_id = DBM.saveJail(jailProcess,isEdit);
+                DBM.saveJail(jailProcess,isEdit);
             }
-            //DBM.saveJailBlocks(jail_id,jailProcess,isEdit);
-
-        }
-        catch(Exception e){
-            getLogger().info(e.toString());
-        }
-
     }
 
     public static void setSkinFromUrl(Player player, String url) {

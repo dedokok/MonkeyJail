@@ -14,10 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.player.*;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -32,19 +29,8 @@ public class EventListener implements Listener {
         Player player = event.getPlayer();
         if(JailLogic.monkeyList.containsKey(player.getName())){
             getLogger().info("Вошёл в containsKey");
-            //PlayerStorage playerStorage = MonkeyJail.skinsRestorerAPI.getPlayerStorage();
             try {
-//                Optional<SkinProperty> property = playerStorage.getSkinForPlayer(
-//                        player.getUniqueId(),
-//                        player.getName()
-//                );
-//                SkinProperty sP = property.orElse(null);
-//                getLogger().info("Property = " + (sP==null ? "null" : "true"));
-
-                //JailLogic.skinsHistory.put(player.getName(),property.orElse(null));
-
                 JailCommands.setSkinFromUrl(Bukkit.getPlayer(player.getName()), "http://textures.minecraft.net/texture/af20e8affb49949274a61ad7cf3da9f83026abad7e184d184109ff86785bb6f5");
-
             }
             catch(Exception e ){
                 getLogger().warning("Не удалось получить скин игрока");
@@ -67,17 +53,24 @@ public class EventListener implements Listener {
     @EventHandler
     public void onDeathEvent(PlayerDeathEvent event) {
         if (JailLogic.needToRemove.contains(event.getEntity().getName())) {
-            event.setKeepInventory(true);
-            event.setKeepLevel(true);
-            event.getDrops().clear();
-            event.setDeathMessage(null);
-            MonkeyJail.instance.getServer().getScheduler().runTaskLater(MonkeyJail.instance, () -> {
-                event.getEntity().spigot().respawn();
-            }, 1L);
+            processDeath(event);
             JailLogic.needToRemove.remove(event.getEntity().getName());
-
+            return;
+        }
+        if(JailLogic.monkeyList.containsKey(event.getEntity().getName())){
+            processDeath(event);
+            return;
         }
 
+    }
+    void processDeath(PlayerDeathEvent event){
+        event.setKeepInventory(true);
+        event.setKeepLevel(true);
+        event.getDrops().clear();
+        event.setDeathMessage(null);
+        MonkeyJail.instance.getServer().getScheduler().runTaskLater(MonkeyJail.instance, () -> {
+            event.getEntity().spigot().respawn();
+        }, 1L);
     }
     @EventHandler
     public void onHitEvent(EntityDamageByEntityEvent event){

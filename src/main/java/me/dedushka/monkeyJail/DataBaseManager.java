@@ -13,20 +13,13 @@ import static org.bukkit.Bukkit.getLogger;
 
 public class DataBaseManager {
     private static Connection connection;
-    private static MonkeyJail MJ;
-
-    public DataBaseManager(MonkeyJail MJ){
-        this.MJ=MJ;
-    }
     public DataBaseManager(){}
 
-    private final Map<Integer, Set<Long>> jailBlocks = new HashMap<>();
 
     public void createDB(){
         try {
             String url = "jdbc:sqlite:plugins/MonkeyJail/database.db";
             connection = DriverManager.getConnection(url);
-
 
             String sql = "CREATE TABLE IF NOT EXISTS jails (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -51,19 +44,17 @@ public class DataBaseManager {
 
         }
         catch( SQLException e){
-            e.printStackTrace();
+            getLogger().warning("Не удалось создать таблицы");
         }
     }
 
     //подключение к бд обезьян
     public void connectDB() {
         try {
-
             String url = "jdbc:sqlite:plugins/MonkeyJail/database.db";
             connection = DriverManager.getConnection(url);
-            //getLogger().info("2 Connection is "+ (connection==null ? true : false));
         } catch (SQLException e) {
-            e.printStackTrace();
+            getLogger().warning("Не удалось подключиться к БД");
         }
     }
 
@@ -82,8 +73,7 @@ public class DataBaseManager {
             //getLogger().info("3 Connection is "+ (connection==null ? true : false));
         }
         catch(SQLException e){
-            e.printStackTrace();
-            //getLogger().info("Ошибка добавления обезьяны");
+            getLogger().warning("Не удалось добавить обезьяну");
         }
     }
 
@@ -119,32 +109,11 @@ public class DataBaseManager {
                 monkeyList.put(username,new MonkeyClass(jail_name,username, time_left, admin_username, reason));
             }
         } catch (SQLException e) {
-            //getLogger().info(e.getMessage());
+            getLogger().warning("Не удалось получить список обезьян");
         }
 
         return monkeyList;
     }
-
-
-
-
-
-//    public void loadJailBlocks(int jailId) throws SQLException {
-//        Set<Long> blocks = new HashSet<>(1024);
-//
-//        try (PreparedStatement stmt = db.prepareStatement(
-//                "SELECT x, y, z FROM jail_blocks WHERE jail_id = ?")) {
-//            stmt.setInt(1, jailId);
-//            ResultSet rs = stmt.executeQuery();
-//
-//            while (rs.next()) {
-//                long key = toKey(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"));
-//                blocks.add(key);
-//            }
-//        }
-//
-//        jailBlocks.put(jailId, blocks);
-//    }
 
     private long toKey(int x, int y, int z) {
         return ((long)(x & 0x3FFFFFF) << 38) | ((long)(z & 0x3FFFFFF) << 12) | (long)(y & 0xFFF);
@@ -165,13 +134,16 @@ public class DataBaseManager {
         return (raw << 20) >> 20;
     }
 
-    public void saveJailBlocks(int jailId, JailClass jail, boolean isEdit) throws SQLException {
+    public void saveJailBlocks(int jailId, JailClass jail, boolean isEdit) {
         // Сначала удаляем старые блоки этой тюрьмы
         getLogger().info("Сохранение блоков тюрьмы. Количество: "+ jail.blocks.size());
         String deleteSql = "DELETE FROM blocks WHERE jail_id = ?";
         try (PreparedStatement deleteStmt = connection.prepareStatement(deleteSql)) {
             deleteStmt.setInt(1, jailId);
             deleteStmt.executeUpdate();
+        }
+        catch(Exception e){
+            getLogger().warning("Не удалось удалить старые блоки тюрьмы");
         }
 
 
@@ -185,7 +157,6 @@ public class DataBaseManager {
                 insertStmt.setInt(1, jailId);
                 insertStmt.setLong(2, key);
                 insertStmt.addBatch();
-                //insertStmt.executeBatch();
                 if (count % 1000 == 0) {
                     insertStmt.executeBatch();
                 }
@@ -197,10 +168,13 @@ public class DataBaseManager {
             connection.commit();
             connection.setAutoCommit(true);
         }
+        catch(Exception e){
+            getLogger().warning("Не удалось сохранить блоки тюрьмы");
+        }
     }
 
 
-    public int saveJail(JailClass jail, boolean isEdit) throws SQLException {
+    public int saveJail(JailClass jail, boolean isEdit) {
         String sql = "";
         if(isEdit){
             sql = "UPDATE jails SET spawn_key = ? WHERE jail_name = ?";
@@ -227,6 +201,10 @@ public class DataBaseManager {
             saveJailBlocks(jailId, jail, isEdit);
             return jailId;
         }
+        catch(Exception e){
+            getLogger().warning("Не удалось сохранить тюрьму");
+        }
+        return -1;
     }
 
     // Загрузить все тюрьмы
@@ -239,11 +217,11 @@ public class DataBaseManager {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                int jail_id       = rs.getInt("id");
+                int jail_id = rs.getInt("id");
                 String jail_name = rs.getString("jail_name");
-                String creator   = rs.getString("creator_name");
+                String creator = rs.getString("creator_name");
                 String worldName = rs.getString("world");
-                long spawnKey    = rs.getLong("spawn_key");
+                long spawnKey = rs.getLong("spawn_key");
 
                 BlockPosClass spawn = new BlockPosClass(xFromKey(spawnKey), yFromKey(spawnKey), zFromKey(spawnKey));
                 Set<BlockPosClass> blocks = loadJailBlocks(jail_id);
@@ -269,10 +247,10 @@ public class DataBaseManager {
             ResultSet rs = stmt.executeQuery();
 
             if(rs.next()) {
-                int jail_id       = rs.getInt("id");
-                String creator_name   = rs.getString("creator_name");
+                int jail_id = rs.getInt("id");
+                String creator_name = rs.getString("creator_name");
                 String world_name = rs.getString("world");
-                long spawnKey    = rs.getLong("spawn_key");
+                long spawnKey = rs.getLong("spawn_key");
 
 
                 BlockPosClass spawn_block = new BlockPosClass(xFromKey(spawnKey), yFromKey(spawnKey), zFromKey(spawnKey));
@@ -287,54 +265,8 @@ public class DataBaseManager {
         return jail;
     }
 
-
-
-
-    //получить айди тюрьмы по имени
-    public int getJailID(String jail_name) {
-        getLogger().info("Вошёл в getJailID");
-        String sql = "SELECT id FROM jails WHERE jail_name = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, jail_name);
-            ResultSet rs = stmt.executeQuery();
-
-            if(rs.next()) {
-                return rs.getInt("id");
-            }
-        } catch (Exception e) {
-            getLogger().info("Ошибка loadAllJails");
-        }
-        return -1;
-
-    }
-
-
-
-
-
-
-    //получить количество тюрем из таблицы blocks
-    public ArrayList<String> getJailNames() {
-        ArrayList<String>jail_names = new ArrayList<>();
-        String sql = "SELECT DISTINCT jail_name FROM jails";
-            try {
-                PreparedStatement pstmt = connection.prepareStatement(sql);
-                ResultSet rs = pstmt.executeQuery();
-
-                while (rs.next()) {
-                    jail_names.add(rs.getString("jail_name"));
-                }
-            }
-            catch(Exception e){
-                getLogger().warning("Ошибка получения списка тюрем");
-            }
-
-        return jail_names;
-    }
-
-    // ── Загрузить блоки тюрьмы
-
-    public Set<BlockPosClass> loadJailBlocks(int jailId) throws SQLException {
+    //получить блоки тюрьмы
+    public Set<BlockPosClass> loadJailBlocks(int jailId) {
         Set<BlockPosClass> blocks = new HashSet<>();
 
         String sql = "SELECT block_key FROM blocks WHERE jail_id = ?";
@@ -348,21 +280,30 @@ public class DataBaseManager {
             }
             getLogger().info("Получил блоки, количество: "+blocks.size());
         }
+        catch(Exception e){
+            getLogger().warning("Не удалось получить блоки тюрьмы");
+        }
 
         return blocks;
     }
 
     // Удалить тюрьму (блоки удалятся сами)
-    public void deleteJail(String jailName) throws SQLException {
+    public void deleteJail(String jailName) {
         String sql = "DELETE FROM jails WHERE jail_name = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, jailName);
             stmt.executeUpdate();
         }
+        catch(Exception e){
+            getLogger().warning("Не удалось удалить тюрьму");
+        }
         sql = "UPDATE monkeys SET time_left = 0 WHERE jail_name = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, jailName);
             stmt.executeUpdate();
+        }
+        catch(Exception e){
+            getLogger().warning("Не удалось убрать время обезьянам");
         }
     }
 
@@ -373,18 +314,12 @@ public class DataBaseManager {
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    //getLogger().info("Нашёл руду в БД "+pos_x + " "+pos_y+" "+pos_z);
-                    return true;
-                }
-                return false;
+                return rs.next();
             }
         }
         catch(SQLException e){
             e.printStackTrace();
         }
-        //getLogger().info("Не нашёл руду в БД "+pos_x + " "+pos_y+" "+pos_z);
-
         return false;
     }
 
@@ -407,8 +342,6 @@ public class DataBaseManager {
 
         return false;
     }
-
-
 
 
     void updateMonkeyTable(HashMap<String,MonkeyClass> updatedMonkeyList){
