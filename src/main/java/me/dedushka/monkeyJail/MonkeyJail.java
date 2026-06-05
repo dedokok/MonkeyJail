@@ -50,6 +50,7 @@ public final class MonkeyJail extends JavaPlugin {
         JailCommands jC = new JailCommands();
         jC.stopProcess(null);
         JailCommands.tpAllFromShreakingMachine();
+        JailCommands.removeShows();
 
     }
 

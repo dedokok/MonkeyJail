@@ -1,6 +1,7 @@
 package me.dedushka.monkeyJail;
 
 import me.dedushka.monkeyJail.Classes.BlockPosClass;
+import me.dedushka.monkeyJail.Classes.JailClass;
 import me.dedushka.monkeyJail.Classes.JailProcessClass;
 import me.dedushka.monkeyJail.Listeners.ShreakingListener;
 import net.kyori.adventure.bossbar.BossBar;
@@ -43,6 +44,7 @@ public class JailCommands implements CommandExecutor{
     static boolean isTiny = false;
     public static HashMap<String,Location>shreakLocations = new HashMap<>();
     public JailCommands(){}
+    public static HashMap<String, ArrayList<JailProcessClass>>playerShowJails = new HashMap<>();
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -77,6 +79,10 @@ public class JailCommands implements CommandExecutor{
                     tpJailCommandExecutor(args, player);
                     return true;
                 }
+                case "showjail":{
+                    showJailCommandExecutor(args,player);
+                    return true;
+                }
             }
         } else {
             sender.sendMessage("Эта команда только для игроков!");
@@ -84,37 +90,97 @@ public class JailCommands implements CommandExecutor{
         return false;
     }
 
+    boolean showJailCommandExecutor(String[] args, Player player){
+        if (!(player.hasPermission("monkeyjail.showjail") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
+
+        //0 - showJail
+        //1 - название
+        if (args.length < 2) {
+            player.sendMessage("§cУкажите название тюрьмы!");
+        }
+        if(!JailLogic.jails.containsKey(args[1])){
+            player.sendMessage("§cТакой тюрьмы нет!");
+        }
+
+        if(playerShowJails.containsKey(player.getName())){
+            int index=-1;
+            for(int i = 0; i<playerShowJails.get(player.getName()).size();i++){
+                JailProcessClass jailProcess = playerShowJails.get(player.getName()).get(i);
+                if(jailProcess.jail_name.equals(args[1])){
+                    index=i;
+                    break;
+                }
+            }
+            if(index!=-1){
+                hideJailBorder(playerShowJails.get(player.getName()).get(index));
+                playerShowJails.get(player.getName()).remove(index);
+                return true;
+            }
+        }
+
+        ArrayList<JailProcessClass>jailsList = playerShowJails.get(player.getName());
+        if(jailsList==null){
+            jailsList= new ArrayList<>();
+        }
+        jailsList.add(new JailProcessClass(JailLogic.jails.get(args[1])));
+        playerShowJails.put(player.getName(),jailsList);
+        showJailBorder(jailsList.getLast());
+        return true;
+    }
+
     boolean tpJailCommandExecutor(String[] args,Player player) {
+        if (!(player.hasPermission("monkeyjail.tpjail") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
         //0 - tpJail
         //1 - название
         getLogger().info("Начал процесс телепорта");
         if (args.length < 2) {
             player.sendMessage("§cУкажите название тюрьмы");
         }
-        if(JailLogic.jails.containsKey(args[1])){
-            World jail_world = Bukkit.getWorld(JailLogic.jails.get(args[1]).world);
-            BlockPosClass spawnBlock = JailLogic.jails.get(args[1]).spawnBlock;
-            double x = spawnBlock.x, z = spawnBlock.z, y=spawnBlock.y;
-            player.teleport(new Location(jail_world,x,y,z));
-            return true;
-        }
-        else{
-            player.sendMessage("§cТакой тюрьмы не существует!");
-            return false;
+        if (!JailLogic.jails.containsKey(args[1])) {
+            player.sendMessage("§cТакой тюрьмы нет!");
         }
 
+        if (JailLogic.jails.containsKey(args[1])) {
+            World jail_world = Bukkit.getWorld(JailLogic.jails.get(args[1]).world);
+            BlockPosClass spawnBlock = JailLogic.jails.get(args[1]).spawnBlock;
+            double x = spawnBlock.x, z = spawnBlock.z, y = spawnBlock.y;
+            player.teleport(new Location(jail_world, x, y, z));
+            return true;
+
+
+        }
+        return false;
     }
     boolean deleteJailCommandExecutor(String[] args,Player player){
+        if (!(player.hasPermission("monkeyjail.deletejail") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
         //0 - deleteJail
         //1 - название
         getLogger().info("Начал процесс удаления");
         if(args.length<2){
             player.sendMessage("§cУкажите название тюрьмы");
         }
+
+        int index=-1;
+        for(int i = 0; i<playerShowJails.get(player.getName()).size();i++){
+            JailProcessClass jailProcess = playerShowJails.get(player.getName()).get(i);
+            if(jailProcess.jail_name.equals(args[1])){
+                index=i;
+                break;
+            }
+        }
+        if(index!=-1){
+            hideJailBorder(playerShowJails.get(player.getName()).get(index));
+            playerShowJails.get(player.getName()).remove(index);
+        }
+
         try {
-            getLogger().info("До удаления");
             DBM.deleteJail(args[1]);
-            getLogger().info("После удаления");
             JailLogic jL = new JailLogic();
             jL.updateJailList();
             jL.updateMonkeyList();
@@ -128,7 +194,19 @@ public class JailCommands implements CommandExecutor{
     }
 
 
+    public static void removeShows(){
+        for(ArrayList<JailProcessClass> jailsArray : playerShowJails.values()){
+            for(JailProcessClass jailProcess : jailsArray){
+                hideJailBorder(jailProcess);
+            }
+        }
+    }
+
+
     boolean shreakCommandExecutor(String[] args, Player player) {
+        if (!(player.hasPermission("monkeyjail.fuck") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
         //0 - fuck
         //1 - ник
         if (args.length < 2) {
@@ -237,6 +315,9 @@ public class JailCommands implements CommandExecutor{
     }
 
     boolean jailMonkeyCommandExecutor(String[] args, Player player){
+        if (!(player.hasPermission("monkeyjail.jail") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
         //0 - jail
         //1 - ник
         //2 - название тюрьмы
@@ -297,6 +378,9 @@ public class JailCommands implements CommandExecutor{
 
     //unjail
     boolean unJailMonkeyCommandExecutor(String[] args, Player player){
+        if (!(player.hasPermission("monkeyjail.unjail") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
         //0 - unjail
         //1 - ник
         //2 - тюрьма
@@ -343,6 +427,10 @@ public class JailCommands implements CommandExecutor{
 
 
     boolean createCommandExecutor(String[] args, Player player){
+        if (!(player.hasPermission("monkeyjail.createjail") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
+
         if(args.length<2){
             player.sendMessage("§cУкажите аргумент!");
             return false;
@@ -409,6 +497,9 @@ public class JailCommands implements CommandExecutor{
 
 
     boolean editJailCommandExecutor(String[] args, Player player){
+        if (!(player.hasPermission("monkeyjail.editjail") || player.hasPermission("monkeyjail.admin"))) {
+            player.sendMessage("§cУ вас нет прав!");
+        }
         if(args.length<3){
             player.sendMessage("§cУкажите аргумент!");
             return false;
@@ -744,20 +835,21 @@ public class JailCommands implements CommandExecutor{
 
         if (meta != null) {
             // 2. Add content and metadata
-            meta.setTitle("Jail create help");
+            meta.setTitle("Помощь по созданию клеток");
             meta.setAuthor("dedushka_1");
-            meta.addPage("\"§b§l...§r\" это \"/monkey createJail\"\n" +
-                    "You can open this book with §b§l...help§r.\n" +
-                    "§lTo create jail:\n" +
-                    "§l1.§c§l!!!§r Start: §b§l...start§r\n" +
-                    "§l2.§c§l!!!§r Create floor: §b§l...setFirstAngle§r and §b§l...setSecondAngle§r. Here you need to make HORIZONTAL rectangle\n");
-            meta.addPage("§l3.§r Change shape: §b§l...addB§r and §b§l...removeB§r. Your pos = block\n"+
-                    "§l4.§r Set height: §b§l...setHeight <number>§r\n" +
-                    "§l5.§r Set name: §b§l...setName <name>§r\n" +
-                    "§l6.§c§l!!!§r Set spawn block: §b§l...setSB§r. Your pos = block\n" +
-                    "§l7.§c§l!!!§r Complete: §b§l...done§r.\n" +
-                    "§lForce stop: §b§l...stop§r\n" +
-                    "§lShow/hide border: §b§l...show§r");
+            meta.addPage("Все команды делать через §l/monkey createJail§r\n" +
+                    "Открыть эту книгу: §lhelp§r.\n" +
+                    "§lСоздание тюрьмы:\n" +
+                    "§l1.§c§l!!!§r Начать: §lstart§r\n" +
+                    "§l2.§c§l!!!§r Сделать пол: §lsetFA§r и §lsetSA§r. Тут получится 2д прямоугольник\n"+
+                    "§l3.§r Изменить форму: addB§r и §lremoveB§r\n");
+            meta.addPage(
+                    "§l4.§r Сделать высоту: §lsetHeight <число>§r\n" +
+                    "§l5.§c§l!!!§r Установить имя: §lsetName <имя>§r\n" +
+                    "§l6.§c§l!!!§r Установить спавн-блок: §lsetSB§r\n" +
+                    "§l7.§c§l!!!§r Закончить: §ldone§r.\n" +
+                    "Закончить без сохранения: §lstop§r\n" +
+                    "Показать/спрятать чертёж: §lshow§r");
 
             book.setItemMeta(meta);
 
@@ -820,7 +912,7 @@ public class JailCommands implements CommandExecutor{
         }
     }
 
-    public void hideJailBorder(JailProcessClass jailProcess){
+    public static void hideJailBorder(JailProcessClass jailProcess){
         //getLogger().info("отключение границ. Размер списка: "+blocksDisplay.size());
         if(jailProcess.blocksDisplay!=null) {
             for (BlockDisplay blockDisplay : jailProcess.blocksDisplay.values()) {
